@@ -1,0 +1,162 @@
+---
+title:  -Ad smart
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+In this Project, I will work with a **AdSmartABdata data** I found on
+Kaggle. I intend to run a case study where A/B testing is applied with
+different browsers, for different phone types and accros operating
+system platofrms. The primary aim is to compare user interactions to
+determine which one statistically improves the navigation experience by
+increasing our collecting of your bio information in our smart ad.
+
+The Data Columns :
+
+-   **auction_id:** the unique id of the online user who has been
+    presented the BIO. In standard terminologies this is called an
+    impression id. The user may see the BIO questionnaire but choose not
+    to respond. In that case both the yes and no columns are zero. 
+
+-   **experiment:** which group the user belongs to - control or
+    exposed.
+
+    -   **control:** users who have been shown a dummy ad
+
+    -   **exposed:** users who have been shown a creative, an online
+        interactive ad, with the SmartAd brand. 
+
+-   **date:** the date in YYYY-MM-DD format
+
+-   **hour:** the hour of the day in HH format.
+
+-   **device_make:** the name of the type of device the user has e.g.
+    Samsung
+
+-   **platform_os:** the id of the OS the user has.
+
+-   **browser:** the name of the browser the user uses to see the BIO
+    questionnaire.
+
+-   **yes:** 1 if the user chooses the "Yes" radio button for the BIO
+    questionnaire.
+
+-   **no:** 1 if the user chooses the "No" radio button for the BIO
+    questionnaire.
+
+Import packages for the analysis
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+library(tools)
+library(scales)
+library(broom)
+library(MASS)
+library(rmarkdown)
+library(dplyr)
+library(MASS)
+
+```
+
+Firstly, I load the data from my local drive .
+
+```{r}
+ad.data<- read_csv("ad_data.csv")
+
+```
+
+```{r}
+has.answer <- ad.data|>filter(!(yes == 0 & no == 0))
+
+```
+
+**Naive EDA**
+
+```{r}
+has.answer.1 <- as.data.frame(table(has.answer$experiment, has.answer$yes))
+has.answer.1 <- has.answer.1 %>% 
+  rename(
+    experiment = Var1,
+    yes = Var2
+    )
+has.answer
+```
+
+```{r}
+
+hist_s <-has.answer.1 %>%
+
+  ggplot(aes( x = yes, y = Freq, fill = experiment)) +
+  geom_bar(stat = 'identity',position = "dodge")
+
+agg_data <- has.answer %>%
+  mutate(experiment = as.factor(experiment)) %>%
+  group_by(experiment) %>%
+  mutate(propds = sum(yes) / nrow(has.answer))
+
+
+hist_cprop <- agg_data %>%
+  mutate(yes = as.factor(as.character(yes))) %>%
+  ggplot(aes(x = browser, y = propds, fill = experiment)) +
+  geom_bar(position = "dodge", stat = "identity") 
+
+hist_brows<- hist_s + facet_wrap(~browser)
+
+hist_s
+hist_brows
+hist_cprop
+```
+
+```{r}
+str(df)
+```
+
+```{r}
+# drop platform_os, device_make, no
+
+drop_columns <- c( "platform_os", "device_make", "no")
+df<- has.answer[,!(names(has.answer) %in% drop_columns)]
+```
+
+```{r}
+df$yes<- as.factor(as.character(df$yes))
+
+df$experiment <- as.factor(df$experiment)
+df$browser <- as.factor(df$browser)
+df$days<- difftime(df$date,'2020-07-03' ,units="days")
+
+df$experiment<- fct_relevel(df$experiment, c("control","exposed" ))
+#df$browser<- fct_relevel(df$browser,
+#                 c("Chrome", "Chrome Mobile WebView","Chrome Mobile",
+#                  "Chrome Mobile iOS","Mobile Safari",
+#                 "Mobile Safari UI/WKWebView",
+#                 "Facebook", "Samsung Internet"))
+
+#df$click_through_rate <- df
+```
+
+```{r}
+vi.hr.yes<- df
+```
+
+Compute the click through rate
+
+```{r}
+listde <- c('experiment' , 'browser' ,'yes')
+click_df<- df |>dplyr::select(listde)|>
+group_by(experiment,browser ) |>
+summarize(click_through_rate = round(n()/nrow(df),2))
+
+click_df
+```
+
+```{r}
+sum(click_df$click_through_rate)
+```
