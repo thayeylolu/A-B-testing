@@ -62,6 +62,7 @@ library(MASS)
 library(rmarkdown)
 library(dplyr)
 library(MASS)
+library(ggrepel)
 
 ```
 
@@ -81,12 +82,75 @@ ad.data<- read_csv("ad_data.csv")
     result in an improvement in user engagement?
 
 ```{r}
+
+# filter on yes and no 
 click_bio  <- ad.data|>filter(!(yes == 0 & no == 0))
 ignore_bio <- ad.data|>filter((yes == 0 & no == 0))
-engage_bio <- ad.data|>filter((yes == 1))
+fill_bio <- ad.data|>filter((yes == 1))
+
+```
+
+```{r}
+
+#clicked bio_questionnaire regardless of response
+
+click_bio$clicked <- 1
+ignore_bio$clicked <- 0
+fill_bio$clicked <- 1
 
 
-head(engage_bio)
+# drop column 'no' and rename column 'yes'
+
+drop_rename <- function(df){
+  names(df)[names(df) == 'yes'] <- 'fil_bio'
+  df <- within(df, rm('no'))
+  df
+}
+
+click_bio <- drop_rename(click_bio)
+ignore_bio <- drop_rename(ignore_bio)
+fill_bio<- drop_rename(fill_bio)
+```
+
+```{r}
+# how many users in the experiment?
+# how many users in each experiment ignored the experiment?
+# how many users clicked the bio in each experiment?
+# how many users filled the bios in each experiment?
+
+
+user_stat <- function(data, data_name){
+            data |>
+            group_by(experiment)|> 
+            summarize(users = n())|>
+            mutate(type = data_name)
+            }
+total_user_stat<- rbind(
+      rbind(user_stat(ad.data, 'total'), 
+            user_stat(fill_bio, 'fill bio')),
+      
+      rbind(user_stat(ignore_bio, 'ignores bio'), 
+            user_stat(click_bio, 'clicks bio')))
+
+total_user_stat
+```
+
+Visualizing User Statistics
+
+```{r}
+
+# Calculate y position, placing it in the middle
+
+ggplot(total_user_stat, aes(x = type, y =users, fill = experiment)) +
+  geom_col() +
+  geom_text_repel(data = total_user_stat, mapping = aes(x = type, y =users, label= users))
+```
+
+```{r}
+ for (df in df_list){
+   print(as.tibble(df))
+ }
+
 ```
 
 **Choosing a Blocking Vairable/ feature/regressor**
