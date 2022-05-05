@@ -77,6 +77,29 @@ has.answer <- ad.data|>filter(!(yes == 0 & no == 0))
 
 ```
 
+**Choosing a Blocking Vairable/ feature/regressor**
+
+i am following this principle to select a blocking variable\
+
+-   t is included as a factor in the experiment.
+
+-   It is not of primary interest to the experimenter.
+
+-   It affects the dependent variable.
+
+-   It is unrelated to independent variables in the experiment.
+
+```{r}
+#possible groups for blocking
+unique(has.answer$browser)
+print('-----------')
+unique(has.answer$device_make)
+print('-----------')
+unique(has.answer$platform_os)
+print('-----------')
+unique(has.answer$hour)
+```
+
 **Naive EDA**
 
 ```{r}
@@ -86,7 +109,69 @@ has.answer.1 <- has.answer.1 %>%
     experiment = Var1,
     yes = Var2
     )
-has.answer
+
+names(has.answer)
+```
+
+-   The representation of click on the radio button (1) and no
+    clicks (0) are imbalanced. Users did not clikc alot. Graphically,
+    there are are exposed (treatment) than control.
+
+-   Grouping comparing across confounder `browser` , we observed that
+    the level of exposed is consistently higher than control.
+
+```{r}
+
+table(has.answer$yes, has.answer$experiment)
+
+hist_s <-has.answer.1 %>%
+  ggplot(aes( x = yes, y = Freq, fill = experiment)) +
+  geom_bar(stat = 'identity', position = "dodge")
+
+
+agg_data.1<-  has.answer %>%
+  mutate(experiment = as.factor(experiment)) %>%
+  group_by(experiment, device_make, browser,yes) |>
+   mutate(props =  n()/nrow(has.answer), cnt = n()) 
+
+hist_s
+
+agg_data.1 %>%
+ mutate(yes = as.factor(as.character(yes))) %>%
+  ggplot(aes(x = as.factor(browser), y = props, fill = experiment)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(~as.factor(yes))
+
+
+```
+
+**group by popular names**
+
+```{r}
+pop_browser <- c('Chrome', 'Facebook', 'Safari', 'Samsung')
+
+grp_browser <-has.answer %>%
+  mutate(experiment = as.factor(experiment)) %>%
+   mutate(browser_name = case_when(
+     str_detect( browser, 'Chrome') ~ "Chrome" , 
+     str_detect(browser, 'Facebook') ~ "Facebook" , 
+     str_detect( browser, 'Safari') ~ "Safari" , 
+     str_detect( browser, 'Samsung') ~ "Samsung" ))
+     
+grp_browser.1 <-  grp_browser %>%
+  mutate(experiment = as.factor(experiment)) %>%
+  group_by(experiment, browser_name, yes) |>
+   mutate(props =  n()/nrow(has.answer), cnt = n()) 
+
+
+grp_browser.1 %>%
+ mutate(yes = as.factor(as.character(yes))) %>%
+  ggplot(aes(x = browser_name, y = props, fill = experiment)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(~as.factor(yes))
+
 ```
 
 ```{r}
@@ -94,24 +179,9 @@ has.answer
 hist_s <-has.answer.1 %>%
 
   ggplot(aes( x = yes, y = Freq, fill = experiment)) +
-  geom_bar(stat = 'identity',position = "dodge")
-
-agg_data <- has.answer %>%
-  mutate(experiment = as.factor(experiment)) %>%
-  group_by(experiment) %>%
-  mutate(propds = sum(yes) / nrow(has.answer))
+  geom_bar(stat = 'identity', position = "dodge")
 
 
-hist_cprop <- agg_data %>%
-  mutate(yes = as.factor(as.character(yes))) %>%
-  ggplot(aes(x = browser, y = propds, fill = experiment)) +
-  geom_bar(position = "dodge", stat = "identity") 
-
-hist_brows<- hist_s + facet_wrap(~browser)
-
-hist_s
-hist_brows
-hist_cprop
 ```
 
 ```{r}
