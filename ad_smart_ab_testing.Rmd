@@ -72,7 +72,13 @@ ad.data<- read_csv("ad_data.csv")
 
 ```
 
-**Define a Problem statement**
+**Define a Problem statements**
+
+-   Does clicking(answering) the bio questionnaire of the smart ad (yes
+    or no = 1) cause an improvement in user engagement?
+
+-   Does engaging(yes = 1) with the bio questionnaire of the smart ad
+    result in an improvement in user engagement?
 
 ```{r}
 has.answer <- ad.data|>filter(!(yes == 0 & no == 0))
