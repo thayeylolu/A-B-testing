@@ -86,7 +86,7 @@ ignore_bio <- ad.data|>filter((yes == 0 & no == 0))
 engage_bio <- ad.data|>filter((yes == 1))
 
 
-
+head(engage_bio)
 ```
 
 **Choosing a Blocking Vairable/ feature/regressor**
