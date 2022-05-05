@@ -72,6 +72,8 @@ ad.data<- read_csv("ad_data.csv")
 
 ```
 
+**Define a Problem statement**
+
 ```{r}
 has.answer <- ad.data|>filter(!(yes == 0 & no == 0))
 
