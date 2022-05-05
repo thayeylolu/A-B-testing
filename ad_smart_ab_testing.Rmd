@@ -81,7 +81,11 @@ ad.data<- read_csv("ad_data.csv")
     result in an improvement in user engagement?
 
 ```{r}
-has.answer <- ad.data|>filter(!(yes == 0 & no == 0))
+click_bio  <- ad.data|>filter(!(yes == 0 & no == 0))
+ignore_bio <- ad.data|>filter((yes == 0 & no == 0))
+engage_bio <- ad.data|>filter((yes == 1))
+
+
 
 ```
 
