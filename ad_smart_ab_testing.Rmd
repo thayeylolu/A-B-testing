@@ -144,7 +144,7 @@ total_user_stat
 -   **Users who Ignore the BIO**
 
 -   The representation of click on the radio button (1) and no
-    clicks (0) are imbalanced. Users did not clikc alot. Graphically,
+    clicks (0) are imbalanced. Users did not click alot. Graphically,
     there are are exposed (treatment) than control.
 
 ```{r}
