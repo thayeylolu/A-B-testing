@@ -135,7 +135,17 @@ total_user_stat<- rbind(
 total_user_stat
 ```
 
-Visualizing User Statistics
+**Visualizing User Statistics**
+
+-   **Users who Click the BIO:**
+
+-   **Users who Fill the BIO**
+
+-   **Users who Ignore the BIO**
+
+-   The representation of click on the radio button (1) and no
+    clicks (0) are imbalanced. Users did not clikc alot. Graphically,
+    there are are exposed (treatment) than control.
 
 ```{r}
 
@@ -143,14 +153,7 @@ Visualizing User Statistics
 
 ggplot(total_user_stat, aes(x = type, y =users, fill = experiment)) +
   geom_col() +
-  geom_text_repel(data = total_user_stat, mapping = aes(x = type, y =users, label= users))
-```
-
-```{r}
- for (df in df_list){
-   print(as.tibble(df))
- }
-
+  geom_text_repel(data = total_user_stat, size = 4, mapping = aes(x = type, y =users, label= round(users / nrow(ad.data) * 100, 2)))
 ```
 
 **Choosing a Blocking Vairable/ feature/regressor**
@@ -165,33 +168,44 @@ i am following this principle to select a blocking variable\
 
 -   It is unrelated to independent variables in the experiment.
 
+Let's look at the number of unique factors in each of the possible
+blocking variables:
+
 ```{r}
-#possible groups for blocking
+
+# possible groups for blocking
+paste("Browser:", length(unique(has.answer$browser)))
+print('-----------')
+paste("Device Make:", length(unique(has.answer$device_make)))
+print('-----------')
+paste("Platform OS:", length(unique(has.answer$platform_os)))
+print('-----------')
+paste("Hours:", length(unique(has.answer$hour)))
+```
+
+**Observation and Proceeding**
+
+I select the browser as a blocking variable. I will group the browsers
+into popular/general browser names. Other potential blocking variable
+would be to bin the **hours** or cluster the **device make** into
+popular blocks of popular device brand name.
+
+```{r}
 unique(has.answer$browser)
-print('-----------')
-unique(has.answer$device_make)
-print('-----------')
-unique(has.answer$platform_os)
-print('-----------')
-unique(has.answer$hour)
 ```
-
-**Naive EDA**
 
 ```{r}
-has.answer.1 <- as.data.frame(table(has.answer$experiment, has.answer$yes))
-has.answer.1 <- has.answer.1 %>% 
-  rename(
-    experiment = Var1,
-    yes = Var2
-    )
+pop_browser <- c('Chrome', 'Facebook', 'Safari', 'Samsung')
 
-names(has.answer)
+ad.data <-ad.data %>%
+  mutate(experiment = as.factor(experiment)) %>%
+   mutate(gen_browser = case_when(
+     str_detect( browser, 'Chrome') ~ "Chrome" , 
+     str_detect(browser, 'Facebook') ~ "Facebook" , 
+     str_detect( browser, 'Safari') ~ "Safari" , 
+     str_detect( browser, 'Samsung') ~ "Samsung" ))
+ 
 ```
-
--   The representation of click on the radio button (1) and no
-    clicks (0) are imbalanced. Users did not clikc alot. Graphically,
-    there are are exposed (treatment) than control.
 
 -   Grouping comparing across confounder `browser` , we observed that
     the level of exposed is consistently higher than control.
