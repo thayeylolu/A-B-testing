@@ -153,7 +153,7 @@ total_user_stat
 
 ggplot(total_user_stat, aes(x = type, y =users, fill = experiment)) +
   geom_col() +
-  geom_text_repel(data = total_user_stat, size = 4, mapping = aes(x = type, y =users, label= round(users / nrow(ad.data) * 100, 2)))
+  geom_text_repel(data = total_user_stat, size = 4, mapping = aes(x = type, y =users, label=paste0(round(users / nrow(ad.data) * 100, 2), "%")))
 ```
 
 **Choosing a Blocking Vairable/ feature/regressor**
