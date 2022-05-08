@@ -73,6 +73,39 @@ ad.data<- read_csv("ad_data.csv")
 
 ```
 
+```{r}
+
+# Calculate y position, placing it in the middle
+
+sad.data <- ad.data|>
+          mutate(filled_bio = as.factor(case_when(yes == 1 ~ 1, yes == 0 ~ 0)),
+          clicked_bio = as.factor(case_when(yes == 1 | no == 1 ~ 1, yes != 1 | no != 1 ~ 0 )))
+
+```
+
+```{r}
+filled_count <- ggplot(sad.data) +
+  geom_bar(mapping = aes(x = experiment, fill = filled_bio))
+filled_count  
+
+
+ggplot(sad.data) +
+  geom_bar(mapping = aes(x = experiment, fill =clicked_bio))
+
+```
+
+```{r}
+# pvalue : 0.05
+# chisquare to chekc the signifiacnc eof the varation in the two expe: control and expoure
+chisq.test(sad.data$experiment, sad.data$filled_bio, correct=FALSE) 
+chisq.test(sad.data$experiment, sad.data$clicked_bio, correct=FALSE)
+
+```
+
+From the Chi-Squared test result, we can conclude that sthen you know
+that the difference in the observed sample sizes due to randomness or
+chance.
+
 **Define a Problem statements**
 
 -   Does clicking(answering) the bio questionnaire of the smart ad (yes
@@ -166,9 +199,13 @@ ggplot(total_user_stat, aes(x = type, y =users, fill = experiment)) +
   
 ```
 
+-   **Does clicking(answering) the bio questionnaire of the smart ad
+    (yes or no = 1) cause an improvement in user engagement?**
+
 **Choosing a Blocking Vairable/ feature/regressor**
 
-i am following this principle to select a blocking variable\
+i am following this principle to select a blocking variable to answer
+the two problems:\
 
 -   It is included as a factor in the experiment.
 
@@ -206,20 +243,31 @@ unique(ad.data$browser)
 
 ```{r}
 
-ad.data <-ad.data %>%
-  mutate(experiment = as.factor(experiment)) %>%
-   mutate(gen_browser = as.factor(case_when(
+replace_browser <- function (data) {
+    data %>%
+     mutate(gen_browser = factor(case_when(
         str_detect( browser, 'Android') ~ "Android",
-     str_detect( browser, 'Chrome') ~ "Chrome" ,
+        str_detect( browser, 'Chrome') ~ "Chrome" ,
         str_detect( browser, 'Edge') ~ "Edge",
-     str_detect(browser, 'Facebook') ~ "Facebook" , 
-     str_detect( browser, 'Firefox') ~ "Firefox",
-     str_detect( browser, 'Opera') ~ "Opera",
+        str_detect(browser, 'Facebook') ~ "Facebook" , 
+        str_detect( browser, 'Firefox') ~ "Firefox",
+        str_detect( browser, 'Opera') ~ "Opera",
         str_detect( browser, 'Pinterest') ~ "Pinterest",
-     str_detect( browser, 'Puffin') ~ "Puffin",
-     str_detect( browser, 'Safari') ~ "Safari" ,
-     str_detect( browser, 'Samsung') ~ "Samsung" )))
- 
+        str_detect( browser, 'Puffin') ~ "Puffin",
+        str_detect( browser, 'Safari') ~ "Safari" ,
+        str_detect( browser, 'Samsung') ~ "Samsung")))
+}
+
+click_bio<- replace_browser(click_bio)
+ad.data<- replace_browser(ad.data)
+fill_bio<- replace_browser(fill_bio)
+
+
+sad.data<-replace_browser(sad.data)
+
+ggplot(sad.data) +
+  geom_bar(aes(x = gen_browser, fill = filled_bio)) 
+
 ```
 
 -   Grouping comparing across confounder `browser` , we observed that
@@ -227,31 +275,44 @@ ad.data <-ad.data %>%
 
 **group by popular names**
 
-```{r}
-pop.browser.data <-  ad.data %>%
-  group_by(experiment, gen_browser) |>
-   mutate(props =  n()/nrow(ad.data),
-          cnt = n())  
-
-
-ggplot(pop.browser.data,
-       aes(x = gen_browser, y = props, fill = experiment)) +
-  geom_col() 
-
-```
-
-```{r}
-# drop platform_os, device_make, no
-drop_columns <- c( "platform_os", "device_make", "no")
-df<- has.answer[,!(names(has.answer) %in% drop_columns)]
-```
-
 **Compute the click through rate - CTR**
 
 ```{r}
 
-ad.data <-  ad.data %>%
-  group_by(experiment, gen_browser) |>
-   mutate(ctr =  n()/nrow(ad.data))  
+# drop where 0 is in 
+click_bio_ctr <-  click_bio %>%
+  group_by(gen_browser) |>
+   mutate(ctr_click =  n()/nrow(ad.data),
+          n = n())  
 
+# drop where 0 is in 
+fill_bio_ctr <-  fill_bio %>%
+  group_by(gen_browser) |>
+   mutate(ctr_fill =  n()/nrow(ad.data),
+          n = n())  
+
+
+```
+
+```{r}
+#unique(click_bio_ctr$device_make)
+
+```
+
+**Modelling - with OLS :**
+
+```{r}
+fill_lm <- lm(ctr_fill ~ gen_browser , data = fill_bio_ctr, )
+tidy(fill_lm, conf.int = 0.95) %>% mutate_if(is.numeric, round, 3)
+
+click_lm <- lm(ctr_click ~ gen_browser , data = click_bio_ctr)
+tidy(click_lm, conf.int = 0.95) %>% mutate_if(is.numeric, round, 3)
+```
+
+```{r}
+fill_lm.1 <- lm(ctr_fill ~ gen_browser + hour , data = fill_bio_ctr)
+tidy(fill_lm.1, conf.int = 0.95) %>% mutate_if(is.numeric, round, 3)
+
+click_lm.1 <- lm(ctr_click ~ gen_browser + hour , data = click_bio_ctr)
+tidy(click_lm.1 , conf.int = 0.95) %>% mutate_if(is.numeric, round, 3)
 ```
