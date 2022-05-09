@@ -1,5 +1,5 @@
 ---
-title:  -Ad smart
+title:  - Ad smart: A/B Testing
 output:
   pdf_document:
     toc: true
@@ -9,47 +9,52 @@ editor_options:
     wrap: 72
 ---
 
-In this Project, I will work with a **AdSmartABdata data** I found on
-Kaggle. I intend to run a case study where A/B testing is applied with
-different browsers, for different phone types and accros operating
-system platofrms. The primary aim is to compare user interactions to
-determine which one statistically improves the navigation experience by
-increasing our collecting of your bio information in our smart ad.
+### Brief Introduction
 
-The Data Columns :
+In this Project, I will work with the [**AdSmartABdata data**](https://www.kaggle.com/datasets/osuolaleemmanuel/ad-ab-testing) I found on Kaggle. I intend to run a case study where A/B testing is applied on the click through rate. The primary aim is to compare user interactions with the bio questionnaire to determine which interaction statistically improves CTR .
 
--   **auction_id:** the unique id of the online user who has been
-    presented the BIO. In standard terminologies this is called an
-    impression id. The user may see the BIO questionnaire but choose not
-    to respond. In that case both the yes and no columns are zero. 
+**The Data Columns :**
 
--   **experiment:** which group the user belongs to - control or
-    exposed.
+-   **auction_id:** the unique id of the online user who has been presented the BIO questionnaire.
+
+-   **experiment:** which group the user belongs to - control or exposed.
 
     -   **control:** users who have been shown a dummy ad
 
-    -   **exposed:** users who have been shown a creative, an online
-        interactive ad, with the SmartAd brand. 
+    -   **exposed:** users who have been shown a creative, an online interactive ad, with the SmartAd brand. 
 
 -   **date:** the date in YYYY-MM-DD format
 
 -   **hour:** the hour of the day in HH format.
 
--   **device_make:** the name of the type of device the user has e.g.
-    Samsung
+-   **device_make:** the name of the type of device the user has e.g. Samsung
 
 -   **platform_os:** the id of the OS the user has.
 
--   **browser:** the name of the browser the user uses to see the BIO
-    questionnaire.
+-   **browser:** the name of the browser the user uses to see the BIO questionnaire.
 
--   **yes:** 1 if the user chooses the "Yes" radio button for the BIO
-    questionnaire.
+-   **yes:** 1 if the user chooses the "Yes" radio button for the BIO questionnaire.
 
--   **no:** 1 if the user chooses the "No" radio button for the BIO
-    questionnaire.
+-   **no:** 1 if the user chooses the "No" radio button for the BIO questionnaire.
 
-Import packages for the analysis
+### **Questions**
+
+#### **A/B testing Comparing CTR**
+
+1.  Does the CTR of *exposed* perform better than *control* when
+
+    -   Users **click** on the BIO questionnaire?
+
+    -   Users **fill** the BIO questionnaire?
+
+#### Causality - Blocking
+
+I will address these problems by blocking on a variable
+
+2.  Does clicking(answering) the bio questionnaire of the *smart ad* or *dummy ad* (yes or no = 1) cause an improvement in user engagement?
+3.  Does engaging (yes = 1) with the bio questionnaire of the s*mart ad(exposed)* or *dummy ad(control*) ad result in an improvement in user engagement?
+
+### **Import packages for the analysis**
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -63,89 +68,78 @@ library(rmarkdown)
 library(dplyr)
 library(MASS)
 library(ggrepel)
+library(binom)
 
 ```
 
-Firstly, I load the data from my local drive .
+#### **Load data.**
 
-```{r}
+```{r load_data}
 ad.data<- read_csv("ad_data.csv")
 
+head(ad.data)
 ```
 
-```{r}
+Add two new columns:
 
-# Calculate y position, placing it in the middle
+-   **fill bio:** populate with 1 where the user responds to the bio questionnaire positively and 0 otherwise. That is; **yes = 1**
 
-sad.data <- ad.data|>
-          mutate(filled_bio = as.factor(case_when(yes == 1 ~ 1, yes == 0 ~ 0)),
-          clicked_bio = as.factor(case_when(yes == 1 | no == 1 ~ 1, yes != 1 | no != 1 ~ 0 )))
+-   **click bio:** populate with 1 where the user clicks the bio questionnaire (irrespective of their responses) and 0 otherwise. That is; **yes = 1 or no = 1.**
 
-```
+```{r add_new_columns}
 
-```{r}
-filled_count <- ggplot(sad.data) +
-  geom_bar(mapping = aes(x = experiment, fill = filled_bio))
-filled_count  
-
-
-ggplot(sad.data) +
-  geom_bar(mapping = aes(x = experiment, fill =clicked_bio))
+ad.data <- ad.data|>
+          mutate(fill_bio = as.factor(case_when(yes == 1 ~ 1, yes == 0 ~ 0)),
+          click_bio = as.factor(case_when(yes == 1 | no == 1 ~ 1, yes != 1 | no != 1 ~ 0 )))
 
 ```
+
+```{r vis_count_plot}
+
+fill_plot <-
+    ggplot(ad.data) + 
+    ggtitle ("Saw BIO questionnaire") +
+    geom_bar(mapping = aes(x = experiment, fill = fill_bio)) +
+    xlab("AD (Experimental Treatment)") +
+   ylab("Number of Participants In Experiment") +
+   scale_fill_discrete(name = "fill BIO") 
+
+click_plot<-
+   ggplot(ad.data) +
+   ggtitle("Responded to BIO questionnaire") +
+   geom_bar(mapping = aes(x = experiment, fill = click_bio)) +
+   xlab("AD (Experimental Treatment)") +
+   ylab("Number of Participants In Experiment") +
+   scale_fill_discrete(name = "clicks BIO")
+
+fill_plot
+click_plot
+```
+
+Using a chi-square to investigate the sample representation of the experiment.
 
 ```{r}
 # pvalue : 0.05
-# chisquare to chekc the signifiacnc eof the varation in the two expe: control and expoure
-chisq.test(sad.data$experiment, sad.data$filled_bio, correct=FALSE) 
-chisq.test(sad.data$experiment, sad.data$clicked_bio, correct=FALSE)
+# chisquare to check the significance of the variation in the two experiemnts: control and
+# exposure
+
+chisq.test(ad.data$experiment, ad.data$fill_bio, correct=FALSE) 
+chisq.test(ad.data$experiment, ad.data$click_bio, correct=FALSE)
 
 ```
 
-From the Chi-Squared test result, we can conclude that sthen you know
-that the difference in the observed sample sizes due to randomness or
-chance.
+From the Chi-Squared test result, we can conclude that then you know that the difference in the observed sample sizes due to randomness or chance.
 
-**Define a Problem statements**
+```{r split data}
 
--   Does clicking(answering) the bio questionnaire of the smart ad (yes
-    or no = 1) cause an improvement in user engagement?
-
--   Does engaging(yes = 1) with the bio questionnaire of the smart ad
-    result in an improvement in user engagement?
-
-```{r}
-
+#clicked bio_questionnaire regardless of response
 # filter on yes and no 
 click_bio  <- ad.data|>filter(!(yes == 0 & no == 0))
-ignore_bio <- ad.data|>filter((yes == 0 & no == 0))
 fill_bio <- ad.data|>filter((yes == 1))
 
 ```
 
-```{r}
-
-#clicked bio_questionnaire regardless of response
-
-click_bio$clicked <- 1
-ignore_bio$clicked <- 0
-fill_bio$clicked <- 1
-
-
-# drop column 'no' and rename column 'yes'
-
-drop_rename <- function(df){
-  names(df)[names(df) == 'yes'] <- 'fil_bio'
-  df <- within(df, rm('no'))
-  df
-}
-
-click_bio <- drop_rename(click_bio)
-ignore_bio <- drop_rename(ignore_bio)
-fill_bio<- drop_rename(fill_bio)
-```
-
-```{r}
+```{r user stat}
 # how many users in the experiment?
 # how many users in each experiment ignored the experiment?
 # how many users clicked the bio in each experiment?
@@ -157,7 +151,8 @@ user_stat <- function(data, data_name){
             group_by(experiment)|> 
             summarize(users = n())|>
             mutate(type = data_name)
-            }
+}
+
 total_user_stat<- rbind(
       rbind(user_stat(ad.data, 'total'), 
             user_stat(fill_bio, 'fill bio')),
@@ -170,42 +165,143 @@ total_user_stat
 
 **Visualizing User Statistics**
 
--   **Users who Click the BIO:** About **8.1%** of the total user who
-    responded (clicked) to the bio are in the control group. **7.3%** of
-    the total user who responded(clicked) to the bio are in the exposed
-    group.
+-   **Users who Click the BIO:** About **8.1%** of the total user who responded (clicked) to the bio are in the control group. **7.3%** of the total user who responded(clicked) to the bio are in the exposed group.
 
--   **Users who Fill the BIO:** About **3.8%** of the total user who
-    filled the bio are in the control group. and **3.7%** of the total
-    user who filled the bio are in the exposed group.
+-   **Users who Fill the BIO:** About **3.8%** of the total user who filled the bio are in the control group. and **3.7%** of the total user who filled the bio are in the exposed group.
 
--   **Users who Ignore the BIO:** About **43.2%** of the total user who
-    ignored the bio are in the control group. and **41.5%** of the total
-    user who ignored the bio are in the exposed group.
+-   **Users who Ignore the BIO:** About **43.2%** of the total user who ignored the bio are in the control group. and **41.5%** of the total user who ignored the bio are in the exposed group.
 
-Generally, It is observed that the representation of control and exposed
-in the three groups are equally represented but very far from being
-termed unbalanced. It still is a good representation.
+Generally, It is observed that the representation of control and exposed in the three groups are NOT equally represented . It is still is a good representation because it has been statistically tested with chi-square test above.
 
-```{r}
-
+```{r vis_bio_question_stat}
+ 
 # Calculate y position, placing it in the middle
-
 ggplot(total_user_stat, aes(x = type, y =users, fill = experiment)) +
   geom_col() +
+  ggtitle('Statisitc on BIO questionnaire') + 
+  xlab('conditions of BIO questionnaire') + 
   geom_text_repel(data = total_user_stat, size = 4,
                   mapping = aes(x = type, y =users, 
                   label=paste0(round(users / nrow(ad.data) * 100, 2), "%"))) 
   
 ```
 
--   **Does clicking(answering) the bio questionnaire of the smart ad
-    (yes or no = 1) cause an improvement in user engagement?**
+### Comparing CTR
 
-**Choosing a Blocking Vairable/ feature/regressor**
+#### **Question 1a.**
 
-i am following this principle to select a blocking variable to answer
-the two problems:\
+*Does the CTR of **exposed** perform better than **control** when users **click** on the BIO questionnaire?*
+
+```{r calculate ctr and ctr CI plot}
+
+ctr_table <- function(col) {
+  ad <- ad.data|>
+          group_by(experiment)|>
+         summarise(impressions =  n(),
+                  clicks = sum(as.numeric({{col}} == 1)))|>
+          mutate(ctr = clicks/impressions)
+
+  ci <- binom.confint(ad$clicks, ad$impressions, 
+                    methods = "exact", conf.level = 0.9)
+  ad$lower_ci <- ci$lower
+  ad$upper_ci<- ci$upper
+      
+  ad$experiment <- fct_reorder(ad$experiment, desc(ad$ctr))
+  ad
+  
+}
+
+ctr_plot <- function(ad, label_y) {
+# Plotting as a point with 95% binomial exact confidence intervals.
+
+  CI_plot <- ggplot(ad, aes(experiment, ctr)) +
+    geom_point() +
+    geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci), width = 0.1) +
+    scale_y_continuous(labels = scales::percent) +
+    xlab("Smart AD (Experimental Treatment)") +
+    ylab(label_y) 
+
+  CI_plot
+}
+
+```
+
+Visually, There **isn't an overlap** in the confidence interval of both the exposed and control. Exposure has the highest click through rate **approx. 16.5%** and control with **approx. 14.5%** . This isn't enough evidence that exposure was better than control. I will use a statistical test(prop test) to compare the treatments.
+
+```{r click_ad}
+click_ad <- ctr_table(click_bio )
+ctr_plot(click_ad, "Click-Through Rate - Click") + 
+  ggtitle('Conifidence Intervals:clicked BIO')
+
+```
+
+Stating the following Hypothesis:
+
+**Null Hypothesis:** $$ H_o: CTR_\text{exposure} = CTR_\text{control}$$ **Alternative Hypothesis:** $$ H_a: CTR_\text{exposure} <> CTR_\text{control}$$
+
+```{r comp_experiements}
+successes <- click_ad$clicks
+trials <- click_ad$impressions 
+names(successes) <- click_ad$experiment
+names(trials) <- click_ad$experiment
+
+click_single_comp_ad <- prop.test(successes, trials,
+                      alternative = c("two.sided"),
+                      correct = FALSE ) %>%
+                        tidy() 
+
+click_single_comp_ad
+```
+
+Using alpha = 0.05, we have enough statistical evidence that Experiment exposure has a better click through rate than control. This is because the p-value is : 0.01.
+
+------------------------------------------------------------------------
+
+#### **Question 1b**
+
+*Does the CTR of Exposure Perform better than Control when Users **fill** the BIO questionnaire?*
+
+Visually, There **is an overlap** in the confidence interval of both the exposed and control experiments. Exposure has the highest click through rate **approx. 7.75%** and control with **approx. 6.50%** . This isn't enough evidence that exposure was better than control. I will use a statistical test(prop test) to compare the treatments.
+
+```{r fill_ad}
+
+fill_ad <- ctr(fill_bio )
+ctr_plot(fill_ad, "Click-Through Rate - Fill")
+ 
+```
+
+Stating the following Hypothesis:
+
+**Null Hypothesis:** $$ H_o: CTR_\text{exposure} = CTR_\text{control}$$ **Alternative Hypothesis:** $$ H_a: CTR_\text{exposure} <> CTR_\text{control}$$
+
+```{r comp_experiements}
+successes <- fill_ad$clicks
+trials <- fill_ad$impressions 
+names(successes) <- fill_ad$experiment
+names(trials) <-fill_ad$experiment
+
+fill_single_comp_ad <- prop.test(successes, trials,
+                      alternative = c("two.sided"),
+                      correct = FALSE ) %>%
+                        tidy() 
+
+fill_single_comp_ad
+
+```
+
+Using alpha = 0.05, we have enough statistical evidence to say that Experiment **exposure** has a better click through rate than **contro**l when the users fill the bio questionaire. This is because the p-value is : 0.03.
+
+------------------------------------------------------------------------
+
+#### **Blocking**
+
+#### Question 2a
+
+*Does clicking(answering) the bio questionnaire of the smart ad or dummy ad (yes or no = 1) cause an improvement in user engagement?*
+
+**Choosing a Blocking Variable/ feature/ Regressor**
+
+I am following this principle to select a blocking variable :\
 
 -   It is included as a factor in the experiment.
 
@@ -215,10 +311,9 @@ the two problems:\
 
 -   It is unrelated to independent variables in the experiment.
 
-Let's look at the number of unique factors in each of the possible
-blocking variables:
+Let's look at the number of unique factors in each of the possible blocking variables:
 
-```{r}
+```{r unique values}
 
 # possible groups for blocking
 paste("Browser:", length(unique(ad.data$browser)))
@@ -230,18 +325,15 @@ print('-----------')
 paste("Hours:", length(unique(ad.data$hour)))
 ```
 
-**Observation and Proceeding**
+**Observation**
 
-I select the browser as a blocking variable. I will group the browsers
-into popular/general browser names. Other potential blocking variable
-would be to bin the **hours** or cluster the **device make** into
-popular blocks of popular device brand name.
+I will select the browser as a blocking variable. Then group the browsers into popular/general browser names. Other potential blocking variable would be to bin the **hours** or cluster the **device make** into popular blocks of popular device brand name.
 
-```{r}
+```{r unique_browsers }
 unique(ad.data$browser)
 ```
 
-```{r}
+```{r replace broser fnction}
 
 replace_browser <- function (data) {
     data %>%
@@ -263,43 +355,31 @@ ad.data<- replace_browser(ad.data)
 fill_bio<- replace_browser(fill_bio)
 
 
-sad.data<-replace_browser(sad.data)
+```
 
-ggplot(sad.data) +
-  geom_bar(aes(x = gen_browser, fill = filled_bio)) 
+```{r}
+ggplot(ad.data) +
+  geom_bar(aes(x = gen_browser, fill = fill_bio)) 
 
 ```
 
--   Grouping comparing across confounder `browser` , we observed that
-    the level of exposed is consistently higher than control.
-
-**group by popular names**
-
-**Compute the click through rate - CTR**
+**Compute the click through rate - CTR per gen_browser**
 
 ```{r}
 
-# drop where 0 is in 
 click_bio_ctr <-  click_bio %>%
   group_by(gen_browser) |>
    mutate(ctr_click =  n()/nrow(ad.data),
           n = n())  
-
-# drop where 0 is in 
 fill_bio_ctr <-  fill_bio %>%
   group_by(gen_browser) |>
    mutate(ctr_fill =  n()/nrow(ad.data),
           n = n())  
-
-
 ```
 
-```{r}
-#unique(click_bio_ctr$device_make)
+### **Data Modelling** 
 
-```
-
-**Modelling - with OLS :**
+#### **OLS** 
 
 ```{r}
 fill_lm <- lm(ctr_fill ~ gen_browser , data = fill_bio_ctr, )
@@ -316,3 +396,5 @@ tidy(fill_lm.1, conf.int = 0.95) %>% mutate_if(is.numeric, round, 3)
 click_lm.1 <- lm(ctr_click ~ gen_browser + hour , data = click_bio_ctr)
 tidy(click_lm.1 , conf.int = 0.95) %>% mutate_if(is.numeric, round, 3)
 ```
+
+#### Interaction
