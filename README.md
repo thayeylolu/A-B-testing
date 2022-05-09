@@ -6,7 +6,7 @@ An A/B testing using Statistical tools in R.
 In this Project, I will work with the AdSmartABdata data I found on Kaggle. I intend to run a case study where A/B testing is applied on the click through rate. The primary aim is to compare user interactions with the bio questionnaire to determine which interaction statistically improves CTR .
 
 ## Data 
-The Data is available on Kaggle here is the [link](https://www.kaggle.com/datasets/osuolaleemmanuel/ad-ab-testing).
+The Data is available on Kaggle. Here is the [link](https://www.kaggle.com/datasets/osuolaleemmanuel/ad-ab-testing).
 
 **The Data Columns**
 
@@ -25,7 +25,7 @@ brand.
 ## Questions
 The following Statisitcal questions are asked : 
 
-**1. A/B testing Comparing CTR (Click Through Rate) **
+**1. A/B testing Comparing CTR (Click Through Rate)**
 
 Does the CTR of exposed perform better than control when
 
