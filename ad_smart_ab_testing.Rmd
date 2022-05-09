@@ -1,5 +1,6 @@
 ---
 title:  - Ad smart: A/B Testing
+author: Taiwo Owoseni
 output:
   pdf_document:
     toc: true
