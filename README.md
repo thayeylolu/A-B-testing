@@ -1,11 +1,14 @@
 # A-B-testing
-An A/B testing using Statistical tools on the radio button to prompt website users to fill their BIO for an Ad site
+An A/B testing using Statistical tools in R.
 
 ## Introduction
 
 In this Project, I will work with the AdSmartABdata data I found on Kaggle. I intend to run a case study where A/B testing is applied on the click through rate. The primary aim is to compare user interactions with the bio questionnaire to determine which interaction statistically improves CTR .
 
-_The Data Columns_
+## Data 
+The Data is available on Kaggle here is the (link)[https://www.kaggle.com/datasets/osuolaleemmanuel/ad-ab-testing].
+
+**The Data Columns**
 
 - auction_id: the unique id of the online user who has been presented the BIO questionnaire. • experiment: which group the user belongs to - control or exposed.
 – control: users who have been shown a dummy ad
@@ -22,15 +25,15 @@ brand.
 ## Questions
 The following Statisitcal questions are asked : 
 
-**A/B testing Comparing CTR**
+**1. A/B testing Comparing CTR (Click Through Rate) **
 
-1. Does the CTR of exposed perform better than control when
+Does the CTR of exposed perform better than control when
 
  - Users click on the BIO questionnaire?
 
  - Users fill the BIO questionnaire?
 
-**Causality - Blocking**
+**2. Causality - Blocking**
 
 I will address these problems by blocking on a variable
 
@@ -38,7 +41,12 @@ I will address these problems by blocking on a variable
 
  - Does engaging (yes = 1) with the bio questionnaire of the smart ad(exposed) or dummy ad(control) ad result in an improvement in user engagement?
 
-## Statisitcal Result
 
+## Statisitcal Result Summary
+**A/B testing Comparing CTR**
+The Proportion test on the CTR for the two treatments **exposed** and **control** (_alpha : 0.05_) :
+- **Users click on the BIO questionnaire**: Exposed performed better than control with a CTR of 16.5% and 14.5% respectively.
+- **Users fill the BIO questionnaire**: Exposed performed better than control with a CTR of 7.75% and 6.5% respectively.
 
+**Causality - Blocking** (_In progress_)
 
